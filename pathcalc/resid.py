@@ -4,7 +4,7 @@ import sys
 
 class ResidExtractor:
     def __init__(self, gro_file, natoms):
-        from tintcalc.gro import gro
+        from pathcalc.gro import gro
         self.gro = gro(gro_file)
         self.natoms = natoms
         self.resids = list(self.gro.allRes)

@@ -1,0 +1,13 @@
+{
+    "job_name": "None",
+    "num_processors": 1,
+    "memory": "2000M",
+    "output_filename": "outfile",
+    "gromacs_command": "/data/wxie/Gromacs-SH/build/src/kernel/mdrun-backup",
+    "omp_threads": 1,
+    "scratch_base": "/scratch",
+    "cleanup_extensions": [".spec", ".cpt", ".tpr", ".mdp", ".dat"],
+    "remove_patterns": ["#*", "*.cpt"],
+    "submit_file_name": "submit.sh",
+    "pp_output": "pp.out"
+}

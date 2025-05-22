@@ -1,0 +1,25 @@
+
+{
+    "seed": "None",
+    "hamiltonian": "dftb",
+    "tfermi": 300,
+    "slkopath": "/data/wxie/Gromacs-SH/slko-files-mio/",
+    "wavefunctionreal": [],
+    "chargecarrier": "None",
+    "atomindex": [],
+    "offdiagscaling": "yes",
+    "extchrmode": "vacuo",
+    "espscaling": 1,
+    "nsitetypes": 1,
+    "sic": 0.0,
+    "typefiles": "None",
+    "nsites": "None",
+    "zonesize": "None",
+    "sites": [],
+    "sitetypes": [],
+    "foshift": [],
+    "sitescc": [],
+    "jobtype": "None",
+    "deltaqmode": "mulliken",
+    "internalrelax": "None"
+}
