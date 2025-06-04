@@ -1,0 +1,4 @@
+[ atomtypes ]
+; name        mass      charge    ptype               sigma             epsilon
+    ca     12.0100     0.02190        A        3.399676e-01        3.598240e-01 ;     1.91  0.0860
+    ha      1.0080     0.15089        A        2.599647e-01        6.276000e-02 ;     1.46  0.0150

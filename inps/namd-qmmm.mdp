@@ -1,0 +1,29 @@
+; Run parameters
+integrator              = md           ; leap-frog integrator
+nsteps                  = 0       ; number of steps
+dt                      = 0.0001        ; in ps
+; Output control
+nstxout                 = 0            ; not to save coordinates
+nstvout                 = 0            ; not to save velocities
+nstenergy               = 0           ; not to save energies
+nstlog                  = 0           ; update log file every 10 steps
+; Bond parameters
+constraint_algorithm    = lincs        ; holonomic constraints
+constraints             = h-bonds      ; bonds involving H are constrained
+lincs_iter              = 2            ; number of iterations to correct for rotational lengthening in LINCS
+; Nonbonded settings
+cutoff-scheme           = Verlet       ; Buffered neighbor searching
+ns_type                 = grid         ; search neighboring grid cells
+nstlist                 = 10           ; update per 10 steps, largely irrelevant with Verlet
+rcoulomb                = 1.0          ; short-range electrostatic cutoff (in nm)
+rvdw                    = 1.0          ; short-range van der Waals cutoff (in nm)
+verlet-buffer-drift     = -1           ; NVE to choose rlist manually
+rlist                   = 1.0     ; cut-off distance for the short-range neighbor list (in nm)
+; Electrostatics
+coulombtype             = PME          ; Particle Mesh Ewald for long-range electrostatics
+; Temperature coupling is off
+tcoupl                  = no
+; Pressure coupling is off
+pcoupl                  = no
+; Periodic boundary conditions
+pbc                     = xyz          ; 3-D PBC
