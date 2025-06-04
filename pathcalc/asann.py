@@ -1,4 +1,3 @@
-#fast and original logic
 import numpy as np
 import math
 
