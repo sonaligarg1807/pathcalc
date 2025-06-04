@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 class FirstNN:
-    def __init__(self, all_coms, all_resids, subset_resids):
+    def __init__(self, all_coms: dict, all_resids: list, subset_resids: list):
         self.all_resids= all_resids
         self.subset_resids = subset_resids
         self.resid_to_full_index = {resid: idx for idx, resid in enumerate(all_resids)}
