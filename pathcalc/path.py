@@ -8,7 +8,7 @@ from pathcalc import top, gmx, inpman, asann
 
 
 class PathFinder:
-    def __init__(self, gro_obj, all_coms: list, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath):
+    def __init__(self, gro_obj, all_coms: list, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges):
         self.gro_obj = gro_obj
         self.all_coms = all_coms
         self.all_resids = all_resids
@@ -17,6 +17,8 @@ class PathFinder:
         self.topFilePath = topFilePath
         self.mdpFilePath = mdpFilePath
         self.gmxPath = gmxPath
+        self.y_ranges = y_ranges
+        
         
         
     def get_com(self, resid):
@@ -175,7 +177,7 @@ class PathFinder:
         print(f"Distance between source_resid and selected neighbor_resid: {distance:.2f} nm")
         return distance > cutoff  # for y45 gb system it was 0.70nm and for single crystal and y30 it is 0.65nm; b30:0.60nm; b60: 0.85nm; b45: 0.70nm
     
-    def check_y_range(self, resid, y_ranges=((4.0, 5.5), (7.0, 8.5))):
+    def check_y_range(self, resid):
         """
         Check if the residue's y_COM falls into one of the specified y_ranges.
         """
@@ -183,11 +185,11 @@ class PathFinder:
         if com is None:
             return None
         y_COM = com[1]
-        if y_ranges[0][0] <= y_COM <= y_ranges[0][1]:
-            print(f"Resid {resid} satisfies y_COM {y_COM:.2f} in range {y_ranges[0]}")
+        if self.y_ranges[0][0] <= y_COM <= self.y_ranges[0][1]:
+            print(f"Resid {resid} satisfies y_COM {y_COM:.2f} in range {self.y_ranges[0]}")
             return "in_range_1"
-        elif y_ranges[1][0] <= y_COM <= y_ranges[1][1]:
-            print(f"Resid {resid} satisfies y_COM {y_COM:.2f} in range {y_ranges[1]}")
+        elif self.y_ranges[1][0] <= y_COM <= self.y_ranges[1][1]:
+            print(f"Resid {resid} satisfies y_COM {y_COM:.2f} in range {self.y_ranges[1]}")
             return "in_range_2"
         else:
             print(f"Resid {resid} does NOT satisfy y_COM {y_COM:.2f} in any range")

@@ -5,7 +5,7 @@ import multiprocessing as mp
 from collections import defaultdict
 
 def process_source_resid(source_resid, pen_gro, all_coms, all_resids,
-                        ham_file, topFilePath, gmxPath, mdpFilePath, root_dir):
+                        ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, root_dir):
     source_resid = int(source_resid)
     print(f"Starting biased random walk from source resid {source_resid}")
 
@@ -15,7 +15,7 @@ def process_source_resid(source_resid, pen_gro, all_coms, all_resids,
     os.chdir(subdir)
     print(f"subdirectory for source resid {source_resid} generated")
     
-    pathsample = path.PathFinder(pen_gro, all_coms, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath)
+    pathsample = path.PathFinder(pen_gro, all_coms, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges)
 
     first_source_resid = source_resid
     sampled_paths = [first_source_resid]
@@ -83,6 +83,7 @@ def main():
     mdpFilePath = "/data/sgarg/pentacene/pathcalc/inps/namd-qmmm.mdp"
     gmxPath = "/data/fghalami/gromacs-sh-old_Eik/test_plumed/gromacs-sh-old/COUPLED-DYNAMICS/build-tomas-jan2023/src/kernel"
     ham_file = "TB_HAMILTONIAN.xvg"
+    y_ranges = ([2.5, 4.0] , [4.0, 5.5])
     
     #loading topology and gro file
     pen_gro = gro(groFilePath)
@@ -114,7 +115,7 @@ def main():
 
     root_dir = os.getcwd()
     
-    args = [(resid, pen_gro, all_coms, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, root_dir)
+    args = [(resid, pen_gro, all_coms, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, root_dir)
             for resid in source_resids]
 
     with mp.Pool(processes=32) as pool:
