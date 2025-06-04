@@ -3,12 +3,11 @@ import random
 import sys
 
 class ResidExtractor:
-    def __init__(self, gro_file, natoms):
-        from pathcalc.gro import gro
-        self.gro = gro(gro_file)
+    def __init__(self, gro_file, natoms, resids, coms):
+        self.gro_file = gro_file
         self.natoms = natoms
-        self.resids = list(self.gro.allRes)
-        self.coms = self.gro.MP_resCOMs
+        self.resids = resids
+        self.coms = coms
 
     def extract_source_resids(self, axes_count, axes, selection_choice, y_range_choice, x_limits, y_limits_range_1, y_limits_range_2, z_limits, num_to_select=None, output_file="random_resids.txt"):
         
