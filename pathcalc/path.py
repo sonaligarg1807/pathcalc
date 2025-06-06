@@ -22,9 +22,6 @@ class PathFinder:
         
         
     def get_com(self, resid):
-        """
-        Get the center of mass for a given residue ID.
-        """
         if resid in self.coms:
             return self.coms[resid]
         else:
@@ -33,106 +30,74 @@ class PathFinder:
         
     def cleanup_specific_files(self, keep_extensions=[".txt"]):
         for filename in os.listdir():
-            # Skip directories and files with desired extensions
             if os.path.isdir(filename) or any(filename.endswith(ext) for ext in keep_extensions):
                 continue
             try:
                 os.remove(filename)
-                print(f"Deleted: {filename}")
             except Exception as e:
                 print(f"Could not delete {filename}: {e}")
         
     def avg_cpl(self, ham_file, source_resid, topFilePath, gmxPath, mdpFilePath):
-        
-        #cut around source resid
         start = time.time()
-        print(self.gro_obj.__class__)
-        print(self.gro_obj.cutAroundRes.__code__.co_varnames)
-        
         nn = self.gro_obj.cutAroundRes(source_resid, [1., 1., 1.], allCOMs=self.all_coms)
         print(f"Time taken to cut around residue {source_resid}: {time.time() - start} seconds")
-        print(f"nn residues are: {nn}")
         if not nn:
             print(f"No neighbors found for residue {source_resid}. Ending walk.")
             return None
         
-        #find firstNN
         nn_finder = asann.FirstNN(self.all_coms, self.all_resids, subset_resids=nn)
-        # neighbors = sorted(nn_finder.nearest_neighbors_asann(source_resid))
         neighbors = nn_finder.nearest_neighbors_asann(source_resid)
-        print(f"Neighbors of residue {source_resid}: {neighbors}")
         if not neighbors:
             print(f"No neighbors found for residue {source_resid}. Ending walk.")
             return None
         
-        #rewriting current resid and neighbors
         resids_to_write = [source_resid] + neighbors
-        print(f"Residues to write: {resids_to_write}")
         self.gro_obj.write_gro("temporary.gro", resids_to_write, title="generated from gro class")
-        # self.gro_obj.write_resids_as_gro(resids_to_write, output_name="selected.gro")
-        print(f"Temporary gro file written with {len(resids_to_write)} residues")
-        print(f"Time taken to write gro file: {time.time() - start} seconds")
         
-        #renumber the gro file
         gmx_runner = gmx.gmx(exe="gmx", gro="temporary.gro")
         gmx_runner.renum()
-        print("Renumbered gro file.")
         
         #getting renumbered resids
         renumbered_resids = self.gro_obj.renumbered_resids("temporary.gro")
         resid_mapping = dict(zip(resids_to_write, renumbered_resids))
-        print(f"Residue mapping: {resid_mapping}")  
     
         # modifying topology according to selected residues
-        start = time.time()
         new_top_path = "pen-esp.top"
         shutil.copy(topFilePath, new_top_path)
-        itp_path = "/data/sgarg/pentacene/sampling_qm_zone_algorithm/gb-pen/input_files"
+        itp_path = "/data/sgarg/pentacene/sampling_qm_zone_algorithm/gb-pen/input_files" #update the path
         itp_files = os.path.join(itp_path, "*.itp")
         for itp_file in glob.glob(itp_files):
             shutil.copy(itp_file, ".")
-        print(f"Copied topology file to {new_top_path}")
         pen_top = top(new_top_path)
         pen_top.update_molecule_count("molecule", len(resids_to_write))
-        print("Updated topology file.")
-        print(f"Time taken: {time.time() - start} seconds")
     
-        start = time.time()
+        # start = time.time()
         gmx_runner = gmx.gmx(exe=gmxPath, gro="temporary.gro", top=new_top_path, mdp=mdpFilePath, tpr="ham")
         try:
             gmx_runner.grompp()
-            print("grompp ran successfully.")
         except Exception as e:
             print(f"Error running grompp: {e}")
-        print(f"Time taken: {time.time() - start} seconds")
+        # print(f"Time taken: {time.time() - start} seconds")
 
-        #spec file generation once for this source_resid   
         if not os.path.exists("pen.spec"):
             spec_manager = inpman.inpManager("spec")
             spec_manager.update(natoms=36, nelectrons=102, nallorbitals=102, nfragorbs=1, fragorbs=51)
             spec_manager.save('pen.spec')
-            print("spec file generated.")
         else:
             print("spec file already exists.")
         
-        # Loop over neighbors to execute mdrun
         start = time.time()
         renum_sites = [resid_mapping[r] for r in resids_to_write]
-        print(f"preparing charge-transfer.dat for ({source_resid})")
         
-        # Prepare input file
         ct_manager = inpman.inpManager("ct")
         ct_manager.update(sites=renum_sites, 
                         seed=random.randint(1, 100), chargecarrier="hole", 
                         atomindex=[1, 20, 29], typefiles="pen.spec", 
                         jobtype="NOM", internalrelax="onsite")
         ct_manager.save('charge-transfer.dat')
-        print("charge-transfer.dat file generated.")
         
-        # Run mdrun
         gmx_runner = gmx.gmx(exe=gmxPath, tpr="ham")
         gmx_runner.mdrun(nt=1)
-        print("mdrun ran successfully.")
         if not os.path.exists(ham_file):
             print(f"File {ham_file} not found.")
             return None
@@ -143,7 +108,6 @@ class PathFinder:
                 if line.strip() and not line.startswith(("#", "@")):
                     parts = line.split()
                     try:
-                        # Extract values for each neighbor
                         values = [float(parts[i]) for i in range(2, 2 + len(neighbors))]
                         for neighbor_resid, cpl_value in zip(neighbors, values):
                             extracted[neighbor_resid] = abs(cpl_value) * 1000  # Convert to meV
@@ -151,12 +115,10 @@ class PathFinder:
                         print(f"Error processing line: {line.strip()}")
                         continue
                     
-        print(f"Extracted coupling values for source_resid {source_resid}:")
         for neigh, val in extracted.items():
             print(f"  Neighbor {neigh}: {val} meV")
         
         self.cleanup_specific_files()
-        print(f"cleanedup directory for next source resid")
         
         return extracted
     
@@ -170,17 +132,11 @@ class PathFinder:
         return probabilities
     
     def check_too_far(self, source_com, selected_neighbor_com, cutoff=0.60):
-        """
-        Check if the selected neighbor is too far from the source.
-        """
         distance = math.dist(source_com, selected_neighbor_com)
         print(f"Distance between source_resid and selected neighbor_resid: {distance:.2f} nm")
         return distance > cutoff  # for y45 gb system it was 0.70nm and for single crystal and y30 it is 0.65nm; b30:0.60nm; b60: 0.85nm; b45: 0.70nm
     
     def check_y_range(self, resid):
-        """
-        Check if the residue's y_COM falls into one of the specified y_ranges.
-        """
         com = self.get_com(resid)
         if com is None:
             return None
@@ -196,9 +152,6 @@ class PathFinder:
             return "out_of_range"
         
     def check_visited(self, selected_neighbor, visited_resids):
-        """
-        Check if the neighbor has already been visited.
-        """
         return selected_neighbor in visited_resids
     
     def select_next_neighbor(self, probabilities, source_resid, first_source_resid, visited_resids, sampled_paths):
@@ -235,19 +188,16 @@ class PathFinder:
                     continue
     
                 selected_neighbor = target_resid
-                print(f"Selected neighbor: {selected_neighbor} with probability {probabilities[target_resid]}")
                 return selected_neighbor
     
             # Backtracking
             while sampled_paths:
                 del sampled_paths[-1]  # Remove last
-                print(f"Sampled paths after backtracking: {sampled_paths}")
                 if not sampled_paths:
                     print("No previous residues to backtrack to. Stopping.")
                     return None
     
                 fallback_resid = sampled_paths[-1]
-                print(f"Fallback to {fallback_resid}")
                 selected_neighbor = self.fallback_select_neighbor(fallback_resid, visited_resids)
                 print(f"Selected neighbor for fallback resid {fallback_resid}: {selected_neighbor}")
                 if selected_neighbor:
@@ -259,20 +209,12 @@ class PathFinder:
 
 
     def fallback_select_neighbor(self, fallback_resid, visited_resids):
-        """
-        Attempts to select a neighbor during fallback by recalculating probabilities.
-        """
-        print(f"Fallback mechanism activated for fallback resid {fallback_resid}")
-        
         avg_cpl_values = self.avg_cpl(self.ham_file, fallback_resid,
                                     self.topFilePath, self.gmxPath, self.mdpFilePath)
-        print(f"Average coupling values for fallback_resid {fallback_resid}: {avg_cpl_values}")
         
         probabilities = self.probabilities(avg_cpl_values)
-        print(f"Probabilities for fallback_resid {fallback_resid}: {probabilities}")
         
         random_value = random.uniform(0, 1)
-        print(f"Random number for fallback_resid {fallback_resid}: {random_value}")
         
         source_com = self.get_com(fallback_resid)
         source_range = self.check_y_range(fallback_resid)
