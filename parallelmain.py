@@ -7,23 +7,18 @@ from collections import defaultdict
 def process_source_resid(source_resid, pen_gro, all_coms, all_resids,
                         ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, root_dir):
     source_resid = int(source_resid)
-    print(f"Starting biased random walk from source resid {source_resid}")
 
     # Create subdir and switch to it
     subdir = os.path.join(root_dir, f"SR_{source_resid}")
     os.makedirs(subdir, exist_ok=True)
     os.chdir(subdir)
-    print(f"subdirectory for source resid {source_resid} generated")
     
     pathsample = path.PathFinder(pen_gro, all_coms, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges)
 
     first_source_resid = source_resid
     sampled_paths = [first_source_resid]
-    print(f"First source_resid: {first_source_resid}")
-    print(f"sampled path: {sampled_paths}")
     visited_resids = []
     visited_resids.append(first_source_resid)
-    print(f"visited residue is {visited_resids}")
 
     first_range = pathsample.check_y_range(first_source_resid)
     if first_range == "out_of_range":
@@ -36,16 +31,13 @@ def process_source_resid(source_resid, pen_gro, all_coms, all_resids,
         cpl_values = pathsample.avg_cpl(ham_file, source_resid, topFilePath, gmxPath, mdpFilePath)
         if cpl_values:
             extracted_cpl_values[source_resid] = cpl_values
-            print(f"extracted coupling values for source resid {source_resid}: {cpl_values}")
         else:
             extracted_cpl_values[source_resid] = None
 
         probabilities = pathsample.probabilities(cpl_values)
-        print(f"calculated probabilities for source resid {source_resid}: {probabilities}")
         
         selected_neighbor = pathsample.select_next_neighbor(probabilities, source_resid, first_source_resid,
                                                             visited_resids, sampled_paths)
-        print(f"selected neighbor is {selected_neighbor}")
         
         if selected_neighbor is None:
             print("No valid next residue found. Ending walk.")
@@ -61,20 +53,14 @@ def process_source_resid(source_resid, pen_gro, all_coms, all_resids,
             break
         
         # Continue iteration with selected_neighbor as the new source_resid
-        print(f"Continuing with selected_neighbor {selected_neighbor} as the new source_resid.")
         source_resid = selected_neighbor
 
-    #write the final sampled paths to a text file
     output_file = f"final_sampled_paths_{first_source_resid}.txt"
     with open(output_file, "w") as f:
         for resid in sampled_paths:
             f.write(f"{resid}\n")
-    print (f"Final sampled paths saved to {output_file}")
     
-    print(f"Sampled paths for source_resid {first_source_resid}: {sampled_paths}")
-
     os.chdir(root_dir)
-print("\nAll source_resids processed.")
     
 def main():
     # Loading files and COMs as before
@@ -87,7 +73,6 @@ def main():
     
     #loading topology and gro file
     pen_gro = gro(groFilePath)
-    print(f"loaded gro file: {pen_gro} with {len(pen_gro.allRes)} residues")
     
     #calculating COM for all resids
     start= time.time()
@@ -106,9 +91,7 @@ def main():
         num_to_select=5, output_file="random_resids.txt"
     )
     print(f"Time taken to select residues: {time.time() - start} seconds")
-    print(f"Selected {len(selected_resids)} residues based on the specified criteria.")
-    
-    #reading source_resid values from file
+
     with open("random_resids.txt", "r") as f:
         lines = f.readlines()
     source_resids = [int(line.split()[0]) for line in lines if not line.startswith("#")]
@@ -120,8 +103,6 @@ def main():
 
     with mp.Pool(processes=32) as pool:
         pool.starmap(process_source_resid, args)
-
-    print("\nAll source_resids processed.")
     
 if __name__ == "__main__":
     main()
