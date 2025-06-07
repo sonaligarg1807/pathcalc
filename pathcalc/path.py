@@ -52,7 +52,7 @@ class PathFinder:
             return None
         
         resids_to_write = [source_resid] + neighbors
-        self.gro_obj.write_gro("temporary.gro", resids_to_write, title="generated from gro class")
+        self.gro_obj.write_gro("temporary.gro", resids_to_write)
         
         gmx_runner = gmx.gmx(exe="gmx", gro="temporary.gro")
         gmx_runner.renum()

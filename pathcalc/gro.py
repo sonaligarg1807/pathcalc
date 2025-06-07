@@ -1,6 +1,7 @@
 import multiprocessing
 import numpy as np
-
+import itertools
+from itertools import count
 from scipy.spatial import cKDTree
 from collections import OrderedDict
 
@@ -114,27 +115,36 @@ class gro:
             for c, l in zip (self.getResCrd(r), self.getResAtomLbls(r)):
                 print(f'{l}\t {c[0]*10:6.4f}\t {c[1]*10:6.4f}\t {c[2]*10:6.4f}')
 
-    #still left to make it more generalised...            
-    def write_gro(self, output_path: str, resids_to_write: list, title: str) -> None:
+    #generalised...            
+    def write_gro(self, output_path: str, resids_to_write: list):
+    
+        box = self.boxSize
         lines = []
-        atom_index = 1
+        atom_index_counter = count(1)
     
         for resid in resids_to_write:
-            res_lines = self.getRes(resid)
-            if not res_lines:
-                continue
-            
-            for line in res_lines:
-                new_line = line
-                lines.append(new_line)
-                atom_index += 1
+            try:
+                atom_lines = self.getRes(resid)
+                crds = self.getResCrd(resid)
+                atom_lbls = self.getResAtomLbls(resid)
     
-        with open(output_path, 'w') as f:
-            f.write(f"{title}\n")
-            f.write(f"{atom_index - 1}\n")
-            for line in lines:
-                f.write(f"{line}\n")
-            f.write(f"  {self.boxSize[0]:.5f}  {self.boxSize[1]:.5f}  {self.boxSize[2]:.5f}\n")
+                for i, (line, coord, label) in enumerate(zip(atom_lines, crds, atom_lbls)):
+                    atom_index = next(atom_index_counter)
+                    resid_str = f"{resid:5d}"
+                    rename = line.split()[0][-3:]
+                    atom_name = f"{label.upper()}QM"
+                    x, y, z = coord.astype(float)
+    
+                    lines.append(f"{resid_str}{rename:<5}{atom_name:>5}{atom_index:5d}{x:8.3f}{y:8.3f}{z:8.3f}")
+            except Exception as e:
+                print(f"Resid {resid} skipped: {e}")
+    
+        # Write the new GRO file
+        with open(output_path, "w") as f:
+            f.write("Extracted GRO file\n")
+            f.write(f"{len(lines)}\n")
+            f.writelines([line + "\n" for line in lines])
+            f.write("{:10.5f}{:10.5f}{:10.5f}\n".format(*box))
             
     def renumbered_resids(self, gro_file: str) -> OrderedDict:
         renumbered_resids = []
