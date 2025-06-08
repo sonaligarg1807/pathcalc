@@ -1,7 +1,7 @@
 ; Run parameters
 integrator              = md           ; leap-frog integrator
 nsteps                  = 0       ; number of steps
-dt                      = 0.0001        ; in ps
+dt                      = 0.0        ; in ps
 ; Output control
 nstxout                 = 0            ; not to save coordinates
 nstvout                 = 0            ; not to save velocities
