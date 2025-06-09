@@ -5,7 +5,7 @@ import multiprocessing as mp
 from collections import defaultdict
 
 def process_source_resid(source_resid, pen_gro, all_coms, all_resids,
-                        ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, root_dir):
+                        ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, cutoff, root_dir):
     source_resid = int(source_resid)
 
     # Create subdir and switch to it
@@ -13,7 +13,7 @@ def process_source_resid(source_resid, pen_gro, all_coms, all_resids,
     os.makedirs(subdir, exist_ok=True)
     os.chdir(subdir)
     
-    pathsample = path.PathFinder(pen_gro, all_coms, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges)
+    pathsample = path.PathFinder(pen_gro, all_coms, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, cutoff)
 
     first_source_resid = source_resid
     sampled_paths = [first_source_resid]
@@ -70,6 +70,7 @@ def main():
     gmxPath = "/data/fghalami/gromacs-sh-old_Eik/test_plumed/gromacs-sh-old/COUPLED-DYNAMICS/build-tomas-jan2023/src/kernel"
     ham_file = "TB_HAMILTONIAN.xvg"
     y_ranges = ([2.5, 4.0] , [4.0, 5.5])
+    cutoff = 0.60
     
     #loading topology and gro file
     pen_gro = gro(groFilePath)
@@ -98,7 +99,7 @@ def main():
 
     root_dir = os.getcwd()
     
-    args = [(resid, pen_gro, all_coms, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, root_dir)
+    args = [(resid, pen_gro, all_coms, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, cutoff, root_dir)
             for resid in source_resids]
 
     with mp.Pool(processes=32) as pool:

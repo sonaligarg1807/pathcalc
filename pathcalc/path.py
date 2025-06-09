@@ -8,7 +8,7 @@ from pathcalc import top, gmx, inpman, asann
 
 
 class PathFinder:
-    def __init__(self, gro_obj, all_coms: list, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges):
+    def __init__(self, gro_obj, all_coms: list, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, cutoff):
         self.gro_obj = gro_obj
         self.all_coms = all_coms
         self.all_resids = all_resids
@@ -18,6 +18,7 @@ class PathFinder:
         self.mdpFilePath = mdpFilePath
         self.gmxPath = gmxPath
         self.y_ranges = y_ranges
+        self.cutoff = cutoff
         
         
         
@@ -131,10 +132,10 @@ class PathFinder:
         probabilities = {resid: (weight / total_weight if total_weight > 0 else 0.0) for resid, weight in exp_weights.items()}
         return probabilities
     
-    def check_too_far(self, source_com, selected_neighbor_com, cutoff=0.60):
+    def check_too_far(self, source_com, selected_neighbor_com):
         distance = math.dist(source_com, selected_neighbor_com)
         print(f"Distance between source_resid and selected neighbor_resid: {distance:.2f} nm")
-        return distance > cutoff  # for y45 gb system it was 0.70nm and for single crystal and y30 it is 0.65nm; b30:0.60nm; b60: 0.85nm; b45: 0.70nm
+        return distance > self.cutoff  # for y45 gb system it was 0.70nm and for single crystal and y30 it is 0.65nm; b30:0.60nm; b60: 0.85nm; b45: 0.70nm
     
     def check_y_range(self, resid):
         com = self.get_com(resid)
