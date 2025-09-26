@@ -52,7 +52,7 @@ ideal_pathcalc/
    - Loads the `.gro` structure and computes centers of mass (COMs) of all residues
    - Starts at the chosen residue
    - Iteratively selects the **next residue** based on:
-     - **Highest coupling** (from TB Hamiltonian calculation)
+     - **Highest coupling** from **1 step NOM onsite** calculations
      - **Forward direction** relative to the previous step
      - **Angle ≤ threshold**
    - Enforces **boundary checks** so no residue is within the forbidden margin of the box faces
