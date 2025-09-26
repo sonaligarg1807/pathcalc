@@ -1,4 +1,4 @@
-# PathCalc
+# Quantum Mechanical Path Sampler 
 
 This package, called **`pathcalc`**, provides path-finding algorithms for sampling quantum mechanical (QM) paths in molecular systems.  
 It supports **two cases**:
@@ -33,7 +33,7 @@ ideal_pathcalc/
 └── main_deterministic.py # CLI entrypoint script
 ```
 
-- Each Python file inside `ideal_pathcalc/` defines a class or helper for a specific part of the workflow.  
+- Each Python file inside `ideal_pathcalc/` defines an object for a specific part of the workflow.  
 - The **core logic** is in `path_deterministic.py`, which defines the `PathFinder` class.  
 - The `PathFinder` class also contains the input parameters for `charge_transfer.dat` and `.spec` file. In case of any modifications, change that accordingly.  
 - All paths to the input files like **starting structure** file, **topology file**, **Gromacs-SH**, has to be added in `main_deterministic.py` to generate paths.
