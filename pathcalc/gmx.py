@@ -43,10 +43,10 @@ class gmx:
         if nt is None:
             nt = self.nt
             
-        env_setup_cmd = ["export GMXLIB=/data/fghalami/gromacs-sh-old_Eik/test_plumed/gromacs-sh-old/COUPLED-DYNAMICS/share/top",
-                        "export LIBRARY_PATH=$$LIBRARY_PATH:/usr/local/lib", "export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:/usr/local/lib",
-                        "export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:/data/fghalami/gromacs-sh-old_Eik/gromacs-sh-old_Eik/test_plumed/gromacs-sh-old/COUPLED-DYNAMICS/release-tomas-jan2023/lib",
-                    "export LD_LIBRARY_PATH=/usr/local/run/plumed-2.5.1/lib:$$LD_LIBRARY_PATH"]
+        env_setup_cmd = ["export GMXLIB=/home/fghalami/GMX/Gromacs-SH/COUPLED-DYNAMICS/share/top",
+                        "export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/lib", "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib",
+                        "export LD_LIBRARY_PATH=/usr/local/run/plumed-2.5.1/lib:$LD_LIBRARY_PATH",
+                    "export LD_LIBRARY_PATH=$HOME/miniconda3/lib:$LD_LIBRARY_PATH"]
         env_setup = " && ".join(env_setup_cmd)
         
         if not self.tpr: 
