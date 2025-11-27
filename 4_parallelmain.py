@@ -224,6 +224,7 @@ def main():
                 z_limits=(7.0, 8.5),
                 num_to_select=2,
                 output_file="random_resids.txt",
+                gro_output_file="random_resids.gro",
             )
 
         with open("random_resids.txt", "r") as f:
