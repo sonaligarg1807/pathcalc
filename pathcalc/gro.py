@@ -74,6 +74,11 @@ class gro:
             else:
                 crd.append([i for i in l[-6:-3]])
         return np.asarray(crd, dtype=float)
+    
+    def get_residue_coords(self, resid: int) -> np.ndarray:
+        """Alias for PathFinder: atomic coords (nm) for the given residue."""
+        return self.getResCrd(resid)
+
 
     def getResAtomLbls(self, resid: int) -> list:
         data = self.getRes(resid)
