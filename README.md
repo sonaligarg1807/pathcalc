@@ -43,6 +43,55 @@ covers what you need, or read `parallel_walk_autograin_main.py` for the most com
 
 ---
 
+## 📂 Focus: `pathcalc` (grain-boundary systems)
+
+Applicable to systems with a **single grain boundary separating two grains**. The goal
+is to sample a QM path that starts in one grain and biases each step toward, and
+eventually across, the boundary into the other grain.
+
+### Package structure
+
+```
+pathcalc/
+│
+├── path.py                    # PathFinder class — biased walk, fixed y-range grains
+├── a_series_path.py           # PathFinder class — axis-biased walk + rescue/fallback
+├── directional_bias_path.py   # DirectionalPathFinder — biased along the grain1→grain2 vector
+├── resid.py                   # ResidExtractor: pick source residues by COM range
+├── mapped_resids.py           # maps grain residue IDs between two .gro files
+│
+├── gro.py / gmx.py / inpman.py / top.py / asann.py   # shared low-level helpers
+└── archive/                    # superseded draft algorithm versions
+```
+
+- Three interchangeable biased-walk algorithms live here: `path.py` (fixed y-range grains),
+  `a_series_path.py` (axis bias with rescue/fallback), and `directional_bias_path.py`
+  (bias along the actual grain1→grain2 vector, not a fixed axis). Each has a matching
+  `..._main.py` entrypoint — see the table above.
+- `resid.py` and `mapped_resids.py` are shared setup utilities for picking source
+  residues and locating the two grains, used regardless of which algorithm runs.
+
+### ⚙️ How it works (`pathcalc`)
+
+1. The **user configures**, at the top of the chosen `..._main.py` script:
+   - Input file paths (`.top`, `.gro`, `.mdp`, GROMACS binary path)
+   - The two grains — either as fixed y-ranges/axis-ranges, or as separate `.gro`
+     files whose ranges are detected automatically
+   - Source residues to start walks from — random samples within a COM range, or
+     every residue belonging to the two grains
+2. For each source residue, the program:
+   - Loads the `.gro` structure and computes centers of mass (COMs) of all residues
+   - Computes coupling to the ASANN nearest neighbors at the current residue
+   - Picks the next residue **probabilistically**, weighted by coupling, subject to a
+     **directional/axis bias** toward the other grain
+   - Stops the walk once it **crosses into the other grain**, reaches a **max path
+     length**, or has **no valid next residue**
+3. Each source residue's walk runs in its own `SR_<source_resid>` subfolder, and
+   source residues can be walked in parallel (`parallel_walk_main.py`,
+   `parallel_walk_autograin_main.py`, `axis_biased_walk_main.py`, `directional_walk_main.py`).
+
+---
+
 ## 📂 Focus: `ideal_pathcalc` / `deterministic_walk_main.py`
 
 The goal here is to **deterministically trace a path of molecules** in an ideal molecular
