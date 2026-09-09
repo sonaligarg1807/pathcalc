@@ -150,43 +150,43 @@ class PathFinder:
     # ------------------------------------------------------------------
     def _init_path_direction_if_needed(self, first_source_resid: Optional[int] = None):
         """
-        Define a single transport direction vector:
-           u_path = proj_slab(COM_target - COM_start) / ||...||
-        where COM_start is the COM of the start grain that contains first_source_resid,
-        and COM_target is the other grain.
-        Computed once per path run.
+        Grain-based global direction:
+            u_path = proj_slab(COM(other_grain) - COM(start_grain)) / ||...||
+    
+        Then auto-flip u_path (if needed) so that "forward" matches the actual
+        local forward trend from the start grain (prevents accidental reversed direction).
         """
         if self._path_initialized:
             return
-
+    
         if first_source_resid is None:
             first_source_resid = self._current_first_source_resid
-
+    
         if first_source_resid is None:
-            # can't initialize without a reference start point
             self._path_initialized = True
             self._path_dir = None
             return
-
+    
         start_range = self.check_axis_range(first_source_resid)
         if start_range not in ("in_range_1", "in_range_2"):
-            # if starting resid is out_of_range, direction is ill-defined
             self._path_initialized = True
             self._path_dir = None
+            print("⚠️ first_source_resid is out_of_range → forward-direction disabled")
             return
-
+    
         target_range = "in_range_2" if start_range == "in_range_1" else "in_range_1"
-        com_start = self._grain_com(start_range)
+    
+        com_start  = self._grain_com(start_range)
         com_target = self._grain_com(target_range)
-
+    
         if com_start is None or com_target is None:
             self._path_initialized = True
             self._path_dir = None
             self._start_range_cached = start_range
             self._target_range_cached = target_range
-            print("⚠️  Could not compute grain COMs reliably. Forward-direction constraint disabled.")
+            print("⚠️ Could not compute grain COMs reliably → forward-direction disabled")
             return
-
+    
         v = np.asarray(com_target, float) - np.asarray(com_start, float)
         v = self._project_into_slab(v)
         nv = np.linalg.norm(v)
@@ -195,25 +195,64 @@ class PathFinder:
             self._path_dir = None
             self._start_range_cached = start_range
             self._target_range_cached = target_range
-            print("⚠️  Grain COM separation projects to ~0 in slab plane. Forward-direction disabled.")
+            print("⚠️ Grain COM separation projects to ~0 in slab plane → disabled")
             return
-
-        self._path_dir = v / nv
+    
+        u = v / nv
+    
+        # ------------------------------------------------------------------
+        # AUTO-FLIP so that "forward" is consistent with local steps
+        # (this is the key “always moves forward” guard)
+        # ------------------------------------------------------------------
+        # sample some start-grain molecules near the start resid (or random from that grain)
+        src_com = self.get_com(first_source_resid)
+        if src_com is not None:
+            src_com = np.asarray(src_com, float)
+    
+            # pick nearby candidates from same start grain (prefer local neighborhood)
+            local = self.neighbors_within_radius(
+                first_source_resid, radius_nm=max(self.cutoff, 1.2*self.cutoff), max_neighbors=40
+            )
+            local = [r for r in local if self.check_axis_range(r) == start_range]
+    
+            # if local is empty, fall back to random sample from start grain
+            if not local:
+                grain_res = [r for r in self.all_resids if self.check_axis_range(r) == start_range and r != first_source_resid]
+                random.shuffle(grain_res)
+                local = grain_res[:40]
+    
+            # compute progress for candidate steps and flip if most are negative
+            progs = []
+            for r in local:
+                tc = self.get_com(r)
+                if tc is None:
+                    continue
+                tc = np.asarray(tc, float)
+                progs.append(float(np.dot(tc - src_com, u)))
+    
+            if progs:
+                frac_neg = sum(p < 0 for p in progs) / len(progs)
+                # if majority are "backward", your u is reversed relative to actual local forward direction
+                if frac_neg > 0.6:
+                    u = -u
+                    print("⚠️ Auto-flip: u_path reversed to enforce forward motion from start grain")
+    
+        self._path_dir = u
         self._path_initialized = True
         self._start_range_cached = start_range
         self._target_range_cached = target_range
-
+    
         print("\n" + "-" * 60)
-        print("[GLOBAL PATH DIRECTION INITIALIZATION]")
-        print(f"  slab_normal_axis: {self.slab_normal_axis}")
-        print(f"  start_range:      {start_range}")
-        print(f"  target_range:     {target_range}")
-        print(f"  COM(start):       {np.asarray(com_start)}")
-        print(f"  COM(target):      {np.asarray(com_target)}")
-        print(f"  u_path (in-plane):{self._path_dir}")
-        print(f"  forward_eps (nm): {self.forward_eps:.4f}")
+        print("[GLOBAL PATH DIRECTION INITIALIZATION: GRAIN -> GRAIN]")
+        print(f"  slab_normal_axis:  {self.slab_normal_axis}")
+        print(f"  start_range:       {start_range}")
+        print(f"  target_range:      {target_range}")
+        print(f"  COM(start grain):  {np.asarray(com_start)}")
+        print(f"  COM(target grain): {np.asarray(com_target)}")
+        print(f"  u_path (in-plane): {self._path_dir}")
+        print(f"  forward_eps (nm):  {self.forward_eps:.4f}")
         print("-" * 60)
-
+    
     def _path_progress(self, sc: np.ndarray, tc: np.ndarray) -> float:
         """Signed progress along u_path."""
         if self._path_dir is None:
