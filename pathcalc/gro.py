@@ -1,6 +1,5 @@
 import multiprocessing
 import numpy as np
-import itertools
 from itertools import count
 from scipy.spatial import cKDTree
 from collections import OrderedDict
@@ -56,7 +55,7 @@ class gro:
 
     def getRes(self, resid: int):
         if resid not in self.allRes:
-            raise noSuchResidError(f'There is no {resid}')
+            raise KeyError(f'There is no {resid}')
         data = []
         for line in self.loadFile[2:-1]:  
             line_resid = int(line.split()[0][:-3].strip()) 

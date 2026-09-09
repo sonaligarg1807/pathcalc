@@ -1,5 +1,4 @@
 import subprocess as sp 
-import os 
 
 class gmx:
     def __init__(self, exe: str, **kwargs):

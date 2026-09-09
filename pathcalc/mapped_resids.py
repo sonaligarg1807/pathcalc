@@ -1,6 +1,3 @@
-# refactored to use the precalculated com data if provided
-
-# mapped_resids.py
 """
 Utilities to map grain-residue IDs from an old slab .gro to a new
 reference .gro (e.g. NVT-equilibrated), using COM-based nearest-neighbour

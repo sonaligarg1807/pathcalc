@@ -1,9 +1,8 @@
 import math
 import os
 import shutil
-import time
 import glob
-from ideal_pathcalc import top, gmx, inpman, asann
+from pathcalc import top, gmx, inpman, asann
 
 
 class PathFinder:
@@ -134,8 +133,6 @@ class PathFinder:
         Compute |coupling| (meV) from source_resid to its ASANN nearest neighbors.
         Returns: dict {neighbor_resid: coupling_meV}
         """
-        t0 = time.time()
-
         # Neighborhood pre-cut (±1 nm) → ASANN selects true first NNs.
         nn = self.gro_obj.cutAroundRes(source_resid, [1.0, 1.0, 1.0], allCOMs=self.all_coms)
         if not nn:

@@ -1,8 +1,10 @@
-from pathcalc import gro, path, resid
+"""Parallel biased random walk for QM path sampling across a grain boundary; one worker process per source residue."""
+
 import os
 import time
 import multiprocessing as mp
-from collections import defaultdict
+from pathcalc import gro, path, resid
+
 
 def process_source_resid(source_resid, pen_gro, all_coms, all_resids,
                         ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, cutoff, root_dir):
@@ -27,13 +29,7 @@ def process_source_resid(source_resid, pen_gro, all_coms, all_resids,
         return
     
     while True:
-        extracted_cpl_values = defaultdict(list)
         cpl_values = pathsample.avg_cpl(ham_file, source_resid, topFilePath, gmxPath, mdpFilePath)
-        if cpl_values:
-            extracted_cpl_values[source_resid] = cpl_values
-        else:
-            extracted_cpl_values[source_resid] = None
-
         probabilities = pathsample.probabilities(cpl_values)
         
         selected_neighbor = pathsample.select_next_neighbor(probabilities, source_resid, first_source_resid,
@@ -57,13 +53,13 @@ def process_source_resid(source_resid, pen_gro, all_coms, all_resids,
 
     output_file = f"final_sampled_paths_{first_source_resid}.txt"
     with open(output_file, "w") as f:
-        for resid in sampled_paths:
-            f.write(f"{resid}\n")
-    
+        for r in sampled_paths:
+            f.write(f"{r}\n")
+
     os.chdir(root_dir)
-    
+
+
 def main():
-    # Loading files and COMs as before
     topFilePath = "/data/sgarg/pentacene/sampling_qm_zone_algorithm/gb-pen/input_files/pen-esp.top"
     groFilePath = "/data/sgarg/pentacene/sampling_qm_zone_algorithm/gb-pen/lattice_orientation/b/b30/trajectories_1000/traj.gro"
     mdpFilePath = "/data/sgarg/pentacene/pathcalc/inps/namd-qmmm.mdp"
@@ -72,20 +68,19 @@ def main():
     y_ranges = ([2.5, 4.0] , [4.0, 5.5])
     cutoff = 0.60
     
-    #loading topology and gro file
+    # load structure and compute center of mass for every residue
     pen_gro = gro(groFilePath)
-    
-    #calculating COM for all resids
-    start= time.time()
+
+    start = time.time()
     all_coms = pen_gro.MP_resCOMs
     print(f"calculated center of mass for {len(all_coms)} residues in {time.time()-start} seconds")
     all_resids = list(pen_gro.allRes)
 
-    #extracting random resids
+    # pick random source residues to start walks from
     natoms = 36
     start = time.time()
     selector = resid.ResidExtractor(pen_gro, natoms, all_resids, all_coms)
-    selected_resids = selector.extract_source_resids(
+    selector.extract_source_resids(
         axes_count=3, axes="x,y,z", selection_choice="no", y_range_choice=2,
         x_limits=(2.0, 14.0), y_limits_range_1=(1.0, 3.0),
         y_limits_range_2=[(4.0, 5.5), (7.0, 8.5)], z_limits=(7.0, 8.5),
@@ -98,12 +93,13 @@ def main():
     source_resids = [int(line.split()[0]) for line in lines if not line.startswith("#")]
 
     root_dir = os.getcwd()
-    
-    args = [(resid, pen_gro, all_coms, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, cutoff, root_dir)
-            for resid in source_resids]
+
+    args = [(r, pen_gro, all_coms, all_resids, ham_file, topFilePath, gmxPath, mdpFilePath, y_ranges, cutoff, root_dir)
+            for r in source_resids]
 
     with mp.Pool(processes=32) as pool:
         pool.starmap(process_source_resid, args)
-    
+
+
 if __name__ == "__main__":
     main()

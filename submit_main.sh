@@ -15,6 +15,6 @@ conda activate base
 
 source /usr/local/run/gromacs-2018.6-plumed-2.5.1-sse41/bin/GMXRC
 
-python3 -u parallelmain.py > out.txt 2>&1
+python3 -u parallel_walk_main.py > out.txt 2>&1
 
 echo "Finished code in $(pwd)"

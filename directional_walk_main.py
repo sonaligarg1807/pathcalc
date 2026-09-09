@@ -8,16 +8,10 @@ Performs biased random walks from source residues, attempting to cross
 from one grain to another along the grain–grain connecting vector.
 """
 
-import sys
 import os
 import time
 import argparse
 import multiprocessing as mp
-from pathlib import Path
-from collections import defaultdict
-
-print("Appending path: /home/sgarg/pathcalc/")
-sys.path.append("/home/sgarg/pathcalc/")
 
 from pathcalc import gro, directional_bias_path, resid
 

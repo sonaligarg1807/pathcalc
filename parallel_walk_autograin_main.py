@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
+"""Parallel biased random walk; grain y-ranges are auto-detected from grain .gro files instead of hardcoded."""
+
 import os
 import time
 import multiprocessing as mp
-from collections import defaultdict
 
-print("Appending path: /home/sgarg/pathcalc/")
-sys.path.append("/home/sgarg/pathcalc/")
-
-from pathcalc import gro, path, resid, mapped_resids  # noqa: E402
+from pathcalc import gro, path, resid, mapped_resids
 
 # ------------------ Global parameters ------------------
 MAX_PATH_LEN = 25          # maximum number of residues in one sampled path
@@ -68,8 +65,6 @@ def process_source_resid(
     crossed = False
 
     while True:
-        extracted_cpl_values = defaultdict(list)
-
         cpl_values = pathsample.avg_cpl(
             ham_file,
             source_resid,
@@ -77,11 +72,6 @@ def process_source_resid(
             gmxPath,
             mdpFilePath,
         )
-
-        if cpl_values:
-            extracted_cpl_values[source_resid] = cpl_values
-        else:
-            extracted_cpl_values[source_resid] = None
 
         probabilities = pathsample.probabilities(cpl_values)
 
@@ -166,7 +156,7 @@ def main():
         f"in {time.time() - start:.3f} seconds"
     )
 
-    coms_dict = {resid: MP_coms[i] for i, resid in enumerate(all_resids)}
+    coms_dict = {r: MP_coms[i] for i, r in enumerate(all_resids)}
 
     g1_resids_nvt, g2_resids_nvt = mapped_resids.map_and_write_grains_to_nvt(
         g1FilePath_old,

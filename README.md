@@ -1,48 +1,78 @@
-# Quantum Mechanical Path Sampler 
+# Quantum Mechanical Path Sampler
 
-This package, called **`pathcalc`**, provides path-finding algorithms for sampling quantum mechanical (QM) paths in molecular systems.  
+This package, called **`pathcalc`**, provides path-finding algorithms for sampling quantum mechanical (QM) paths in molecular systems.
 It supports **two cases**:
 
-- **`pathcalc`** → Grain boundary systems  
-  Uses a **biased random walk** algorithm for sampling QM paths in systems with grain boundaries.  
+- **`pathcalc`** → Grain boundary systems
+  Uses **biased random walk** algorithms for sampling QM paths in systems with grain boundaries.
 
-- **`ideal_pathcalc`** → Ideal molecular crystals  
-  Uses a **greedy deterministic walk** algorithm for sampling QM paths in ideal (defect-free) molecular systems.  
+- **`ideal_pathcalc`** → Ideal molecular crystals
+  Uses a **greedy deterministic walk** algorithm for sampling QM paths in ideal (defect-free) molecular systems.
 
----
-
-## 📂 Focus: `ideal_pathcalc`
-
-This README explains usage for the **`ideal_pathcalc`** workflow.  
-Here, the goal is to **deterministically trace a path of molecules** in an ideal molecular crystal based on **electronic coupling, forward direction, and box margin constraints**.
+`pathcalc` and `ideal_pathcalc` share their low-level helpers (`gro.py`, `top.py`, `gmx.py`,
+`inpman.py`, `asann.py`) — the canonical copies live in `pathcalc/`, and `ideal_pathcalc`
+imports them from there instead of keeping duplicates.
 
 ---
 
-## 📂 Package Structure (Relevant to `ideal_pathcalc`)
+## Entry-point scripts
+
+All runnable scripts live at the repo root and end in `_main.py`. They fall into two groups:
+
+### Grain-boundary biased walk (`pathcalc.path`)
+
+Same core algorithm, in increasing order of capability — pick the simplest one that
+covers what you need, or read `parallel_walk_autograin_main.py` for the most complete example:
+
+| Script | Description |
+|---|---|
+| `serial_walk_main.py` | Single-threaded reference implementation. Walks one source residue at a time. |
+| `parallel_walk_main.py` | Same algorithm, one worker process per source residue. **This is what `submit_main.sh` runs.** |
+| `parallel_walk_autograin_main.py` | Parallel, plus automatically derives the two grains' y-ranges from grain `.gro` files (via `pathcalc/mapped_resids.py`) instead of hardcoding them, and enforces a max path length. |
+
+### Other algorithms
+
+| Script | Algorithm module | Description |
+|---|---|---|
+| `axis_biased_walk_main.py` | `pathcalc/a_series_path.py` | Axis-biased walk with a geometric "rescue" search and backtracking fallback when the normal ASANN-neighbor bias fails. |
+| `directional_walk_main.py` | `pathcalc/directional_bias_path.py` | Biases steps along the actual grain1→grain2 connecting vector (not a fixed axis). Takes CLI flags (`--max-path-len`, `--cutoff`, etc. — run with `--help`). |
+| `deterministic_walk_main.py` | `ideal_pathcalc/path_deterministic.py` | Greedy, deterministic walk for ideal (defect-free) crystals — no randomness, highest-coupling forward step each time. |
+
+`pathcalc/archive/` holds earlier, unused draft versions of `directional_bias_path.py` and
+`a_series_path.py`, kept for reference only (see `pathcalc/archive/README.md`).
+
+---
+
+## 📂 Focus: `ideal_pathcalc` / `deterministic_walk_main.py`
+
+The goal here is to **deterministically trace a path of molecules** in an ideal molecular
+crystal based on **electronic coupling, forward direction, and box margin constraints**.
+
+### Package structure
 
 ```
 ideal_pathcalc/
 │
-├── gro.py              # Parser and utilities for .gro files
-├── gmx.py              # Wrapper around GROMACS commands
-├── inpman.py           # Input manager for .dat/.spec files
-├── top.py              # Topology file handler
-├── asann.py            # Neighbor finding (ASANN-based)
-├── path_deterministic.py # PathFinder class (core greedy algorithm)
-│
-└── main_deterministic.py # CLI entrypoint script
+├── path_deterministic.py   # PathFinder class (core greedy algorithm)
+└── __init__.py             # re-exports gro/top from pathcalc/
+
+pathcalc/
+├── gro.py      # parser and utilities for .gro files (shared)
+├── gmx.py      # wrapper around GROMACS commands (shared)
+├── inpman.py   # input manager for .dat/.spec files (shared)
+├── top.py      # topology file handler (shared)
+└── asann.py    # neighbor finding (ASANN-based) (shared)
 ```
 
-- Each Python file inside `ideal_pathcalc/` defines an object for a specific part of the workflow.  
-- The **core logic** is in `path_deterministic.py`, which defines the `PathFinder` class.  
-- The `PathFinder` class also contains the input parameters for `charge_transfer.dat` and `.spec` file. In case of any modifications, change that accordingly.  
-- All paths to the input files like **starting structure** file, **topology file**, **Gromacs-SH**, has to be added in `main_deterministic.py` to generate paths.
+- The **core logic** is in `path_deterministic.py`, which defines the `PathFinder` class.
+- The `PathFinder` class also contains the input parameters for `charge_transfer.dat` and `.spec` file. In case of any modifications, change that accordingly.
+- All paths to the input files like **starting structure** file, **topology file**, **Gromacs-SH**, have to be added in `deterministic_walk_main.py` to generate paths.
 
 ---
 
-## ⚙️ How It Works (`ideal_pathcalc`)
+## ⚙️ How it works (`deterministic_walk_main.py`)
 
-1. The **user specifies** upon running `main_deterministic.py`:
+1. The **user specifies** upon running `deterministic_walk_main.py`:
    - A **starting residue ID**
    - Margins (`Lx`, `Ly`, `Lz`) in nm: residues must be at least this far from the box boundaries
    - Desired **path length** (number of QM sites in the path)
@@ -67,22 +97,22 @@ ideal_pathcalc/
 1. Clone the repository or copy the package into your working directory.
 
 2. Ensure you have the prerequisites:
-   - Python 3.8+  
-   - GROMACS (with the SH patch if needed) in your `PATH`  
-   - Required Python dependencies (e.g., `numpy`)
+   - Python 3.8+
+   - GROMACS (with the SH patch if needed) in your `PATH`
+   - Required Python dependencies (e.g., `numpy`, `scipy`)
 
 3. Run the entrypoint script:
 
    ```
-   python main_deterministic.py
+   python deterministic_walk_main.py
    ```
 
 4. Enter the prompted values (example for a typical run):
-   - Enter starting resid (int): `126`  
-   - Enter Lx margin (nm): `1.0`  
-   - Enter Ly margin (nm): `1.0`  
-   - Enter Lz margin (nm): `1.0`  
-   - Enter total number of QM sites in path (>=1): `2`  
+   - Enter starting resid (int): `126`
+   - Enter Lx margin (nm): `1.0`
+   - Enter Ly margin (nm): `1.0`
+   - Enter Lz margin (nm): `1.0`
+   - Enter total number of QM sites in path (>=1): `2`
    - Enter max forward angle threshold (degrees): `5.0`
 
 5. The script will:
@@ -90,9 +120,15 @@ ideal_pathcalc/
    - Run coupling calculations and greedy path selection
    - Save the chosen sequence in `QM_path_<start_resid>.txt` inside the subfolder
 
+For the grain-boundary scripts (`serial_walk_main.py`, `parallel_walk_main.py`,
+`parallel_walk_autograin_main.py`, `axis_biased_walk_main.py`, `directional_walk_main.py`),
+edit the file paths at the top of the script (or pass CLI flags, for `directional_walk_main.py`)
+and run directly, e.g. `python parallel_walk_main.py`, or submit via `submit_main.sh` on a
+grid-engine cluster.
+
 ### 📄 Output
 
-- **`QM_path_<start_resid>.txt`** — Plain text file, one residue ID per line, showing the selected path (inside `SR_<start_resid>` subfolder).  
+- **`QM_path_<start_resid>.txt`** — Plain text file, one residue ID per line, showing the selected path (inside `SR_<start_resid>` subfolder).
 - If the path fails (boundary/angle issues), the script prints detailed diagnostics and saves any partial path to the same filename.
 
 Diagnostics include:
@@ -117,4 +153,3 @@ RuntimeError: site close to boundary, increase size of box. {xcount}/{n} sites a
 RuntimeError: No next residue chosen: no forward candidate within 5° at any coupling level. 
 Smallest forward angle encountered was 12.35° at resid 210 (|cpl|=43.211 meV).
 ```
-

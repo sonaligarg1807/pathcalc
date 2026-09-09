@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
+"""Axis-biased random walk between two grains, with geometric rescue and backtracking fallback."""
+
 import os
-import time
 import multiprocessing as mp
 
-print("Appending path: /home/sgarg/pathcalc/")
-sys.path.append("/home/sgarg/pathcalc/")
-
-from pathcalc import gro, a_series_path, resid
+from pathcalc import gro, a_series_path
 
 # ------------------ Global parameters ------------------
 MAX_PATH_LEN = 25
